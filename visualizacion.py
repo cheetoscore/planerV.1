@@ -17,20 +17,21 @@ def mostrar_matriz_latex(nombre, matriz):
 
 def generar_grafo_ruta_critica(G, duraciones):
     """Genera un grafo mostrando la ruta crítica con pesos (días de duración)."""
-    pos = nx.spring_layout(G)
-    plt.figure(figsize=(8, 6))
+    niveles = nx.single_source_shortest_path_length(G, min(G.nodes))
+    pos = {nodo: (nivel, -i) for i, (nodo, nivel) in enumerate(niveles.items())}
+    plt.figure(figsize=(10, 7))
     
     # Dibuja todos los nodos y aristas
-    nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=2000, font_size=12, arrows=True)
+    nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=2000, font_size=12, edge_color='black', arrows=True)
     
     # Agregar pesos a las aristas
     etiquetas = nx.get_edge_attributes(G, 'weight')
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=etiquetas)
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=etiquetas, font_size=10)
 
     # Obtener ruta crítica y resaltar
     ruta_critica = nx.dag_longest_path(G, weight='weight')
     edges_criticos = [(ruta_critica[i], ruta_critica[i+1]) for i in range(len(ruta_critica)-1)]
-    nx.draw_networkx_edges(G, pos, edgelist=edges_criticos, edge_color='red', width=2)
+    nx.draw_networkx_edges(G, pos, edgelist=edges_criticos, edge_color='red', width=3)
 
     plt.title("Grafo de Dependencias con Ruta Crítica (Pesos en Días)")
     st.pyplot(plt)
