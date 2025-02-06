@@ -1,0 +1,10 @@
+gestor_proyectos/
+│
+├── main.py                          # Archivo principal para ejecutar la aplicación
+├── adyacencia.py                    # Funciones relacionadas con la matriz de adyacencia
+├── calculos.py                      # Funciones de cálculo (tiempos de inicio, matriz C, etc.)
+├── visualizacion.py                 # Funciones de visualización (Gantt, grafo, LaTeX)
+├── db_manager.py                    # Módulo de gestión de base de datos
+├── models.py                        # Definición de modelos de base de datos
+├── config.py                        # Configuración de la base de datos
+└── requirements.txt                 # Librerías necesarias para el proyecto
