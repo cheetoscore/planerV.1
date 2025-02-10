@@ -1,15 +1,23 @@
 import streamlit as st
+from datetime import datetime
 import pandas as pd
 import networkx as nx
 from db_manager import (
     inicializar_bd, insertar_actividades_desde_tabla, obtener_actividades, limpiar_actividades
 )
 from adyacencia import generar_matriz_adyacencia, calcular_orden_topologico
-from calculos import calcular_tiempos_inicio, generar_matriz_contractual
+from calculos import calcular_tiempos_inicio, generar_matriz_contractual, convertir_a_excel
 from visualizacion import mostrar_matriz_latex, generar_grafo_ruta_critica, generar_gantt_plotly
 
 # Inicializar la base de datos
 inicializar_bd()
+
+# Agregar selector de fecha en la interfaz
+fecha_inicio_proyecto = st.date_input("Selecciona la fecha de inicio del proyecto:", value=datetime.today())
+fecha_inicio_proyecto = datetime.combine(fecha_inicio_proyecto, datetime.min.time())
+
+
+
 
 def cargar_datos_bd():
     """Carga los datos desde la base de datos y los convierte en DataFrame."""
@@ -90,15 +98,25 @@ def main():
 
             # Generar y mostrar matriz C
             matriz_C = generar_matriz_contractual(df_actividades, tiempos_inicio, duracion_total)
+            df_matriz_C = pd.DataFrame(matriz_C)
             st.subheader("Matriz Contractual \( C \):")
             mostrar_matriz_latex("C", matriz_C)
+            # Botón para descargar en Excel
+            st.download_button(
+                label="📥 Descargar Matriz Contractual en Excel",
+                data=convertir_a_excel(df_matriz_C, df_actividades, fecha_inicio_proyecto),
+                file_name="matriz_contractual.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+            
+            
 
             # Visualizaciones
             st.subheader("Grafo de Dependencias con Ruta Crítica:")
             generar_grafo_ruta_critica(G, duraciones=df_actividades['Duración'].tolist())
 
             st.subheader("Diagrama de Gantt Interactivo con Ruta Crítica:")
-            generar_gantt_plotly(df_actividades, orden_topologico, tiempos_inicio, ruta_critica, matriz_adyacencia)
+            generar_gantt_plotly(df_actividades, orden_topologico, tiempos_inicio, ruta_critica, matriz_adyacencia, fecha_inicio_proyecto)
 
         except Exception as e:
             st.error(f"Error en los cálculos: {str(e)}")
