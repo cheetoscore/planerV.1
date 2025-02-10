@@ -7,39 +7,43 @@ import plotly.express as px
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
 
-
-
-
 def mostrar_matriz_latex(nombre, matriz):
     """Muestra una matriz en formato LaTeX."""
     matriz_sym = sp.Matrix(matriz)
     st.latex(f"{nombre} = {sp.latex(matriz_sym)}")
 
 def generar_grafo_ruta_critica(G, duraciones):
-    """Genera un grafo mostrando la ruta crítica con pesos (días de duración)."""
+    """Genera un grafo mostrando la ruta crítica con pesos (días de duración) de izquierda a derecha."""
+    
+    # Calcular niveles jerárquicos basados en la distancia desde el nodo inicial (posición izquierda)
     niveles = nx.single_source_shortest_path_length(G, min(G.nodes))
-    pos = {nodo: (nivel, -i) for i, (nodo, nivel) in enumerate(niveles.items())}
+    pos = {nodo: (nivel, -i) for i, (nodo, nivel) in enumerate(niveles.items())}  # Organiza de izquierda a derecha
+
     plt.figure(figsize=(10, 7))
-    
-    # Dibuja todos los nodos y aristas
+
+    # Dibujar todos los nodos y aristas
     nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=2000, font_size=12, edge_color='black', arrows=True)
-    
+
     # Agregar pesos a las aristas
     etiquetas = nx.get_edge_attributes(G, 'weight')
     nx.draw_networkx_edge_labels(G, pos, edge_labels=etiquetas, font_size=10)
 
-    # Obtener ruta crítica y resaltar
+    # Obtener la ruta crítica y resaltarla
     ruta_critica = nx.dag_longest_path(G, weight='weight')
     edges_criticos = [(ruta_critica[i], ruta_critica[i+1]) for i in range(len(ruta_critica)-1)]
+    
+    # Dibujar la ruta crítica en rojo
     nx.draw_networkx_edges(G, pos, edgelist=edges_criticos, edge_color='red', width=3)
 
+    # Ajustar título y mostrar gráfico
     plt.title("Grafo de Dependencias con Ruta Crítica (Pesos en Días)")
     st.pyplot(plt)
 
-def generar_gantt_plotly(df_actividades, orden_topologico, tiempos_inicio, ruta_critica, matriz_adyacencia):
+def generar_gantt_plotly(df_actividades, orden_topologico, tiempos_inicio, ruta_critica, matriz_adyacencia, fecha_inicio_proyecto):
     """Genera un diagrama de Gantt interactivo con ruta crítica y flechas de dependencias."""
-    # Fecha base del proyecto
-    fecha_inicio_proyecto = datetime(2025, 1, 1)
+
+    # Convertir fecha a datetime.datetime para operaciones con timedelta
+    fecha_inicio_proyecto = datetime.combine(fecha_inicio_proyecto, datetime.min.time())
 
     # Crear datos del Gantt
     data_gantt = []
