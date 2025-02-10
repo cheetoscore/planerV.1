@@ -110,5 +110,4 @@ def generar_gantt_plotly(df_actividades, orden_topologico, tiempos_inicio, ruta_
     # Mostrar gráfico en Streamlit
     st.plotly_chart(fig, use_container_width=True)
 
-    # Mostrar gráfico en Streamlit
-    st.plotly_chart(fig, use_container_width=True)
+
