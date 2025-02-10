@@ -7,3 +7,4 @@ networkx==3.4.1
 sqlalchemy==2.0.31
 sympy==1.13.3
 psycopg2-binary==2.9.9
+XlsxWriter==3.2.2
