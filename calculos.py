@@ -104,3 +104,74 @@ def convertir_a_excel(df, df_actividades, fecha_inicio_proyecto):
     processed_data = output.getvalue()
 
     return processed_data
+
+###################################################################################################
+def generar_matriz_contractual_ajustada(df_actividades, matriz_C, matriz_R, matriz_adyacencia, tiempos_inicio_ajustados, duracion_total):
+    """
+    Ajusta la matriz contractual C según las restricciones R y las dependencias entre actividades.
+    - Se garantiza que las actividades inicien cuando sus predecesoras terminan.
+    - Se ajusta la producción diaria con base en restricciones parciales sin retrasar innecesariamente la actividad.
+    - Se extiende el tiempo total de duración si es necesario.
+    """
+    num_actividades, _ = matriz_C.shape
+    max_duracion = duracion_total * 2  # Se amplía la duración temporalmente
+    C_ajustada = np.zeros((num_actividades, max_duracion))  # Matriz expandida para posibles retrasos
+
+    for i in range(num_actividades):
+        # Obtener producción original y rango de tiempo en C
+        produccion_original = matriz_C[i, :]
+        indices_no_cero = np.where(produccion_original > 0)[0]
+
+        if len(indices_no_cero) == 0:
+            continue  # No hay producción para esta actividad
+
+        inicio_original = indices_no_cero[0]
+        produccion_diaria = produccion_original[inicio_original]
+        unidades_totales = sum(produccion_original)
+
+        # Determinar el tiempo de inicio considerando predecesoras
+        predecesores = np.where(matriz_adyacencia[:, i] == 1)[0]
+        inicio_ajustado = int(tiempos_inicio_ajustados[i])  # Asegurar que sea entero
+
+        if len(predecesores) > 0:
+            fin_predecesores = [int(tiempos_inicio_ajustados[p]) + int(df_actividades.loc[p, 'Duración']) for p in predecesores]
+            inicio_ajustado = max(inicio_ajustado, max(fin_predecesores))  # Espera a que todas terminen
+
+        # Ajustar producción en C' según restricciones en R
+        dia_actual = inicio_ajustado
+        acumulado = 0  # Seguimiento de producción acumulada
+
+        while acumulado < unidades_totales and dia_actual < max_duracion:
+            if dia_actual >= matriz_R.shape[1]:  # Evitar índices fuera de rango en R
+                break
+
+            restriccion = matriz_R[i, dia_actual]  # Factor de restricción
+
+            # Si la restricción es total (0), no se produce y se avanza al siguiente día
+            if restriccion == 0:
+                dia_actual += 1
+                continue
+
+            # Si la restricción es parcial (<1 pero >0), la actividad inicia con producción reducida
+            nueva_produccion = produccion_diaria * restriccion
+            C_ajustada[i, dia_actual] = nueva_produccion
+            acumulado += nueva_produccion
+
+            # Pasar al siguiente día
+            dia_actual += 1
+
+        # Si no se ha producido toda la cantidad requerida, continuar en los siguientes días
+        while acumulado < unidades_totales and dia_actual < max_duracion:
+            C_ajustada[i, dia_actual] = produccion_diaria
+            acumulado += produccion_diaria
+            dia_actual += 1
+
+    # Determinar el tamaño real de la matriz sin columnas vacías innecesarias
+    if np.any(C_ajustada):  # Verificar que haya valores
+        duracion_final = max(np.where(C_ajustada.any(axis=0))[0]) + 1
+    else:
+        duracion_final = duracion_total
+
+    C_ajustada = C_ajustada[:, :duracion_final]  # Recortar a la dimensión real
+
+    return C_ajustada.tolist()
