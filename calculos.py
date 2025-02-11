@@ -142,10 +142,12 @@ def generar_matriz_contractual_ajustada(df_actividades, matriz_C, matriz_R, matr
         acumulado = 0  # Seguimiento de producción acumulada
 
         while acumulado < unidades_totales and dia_actual < max_duracion:
-            if dia_actual >= matriz_R.shape[1]:  # Evitar índices fuera de rango en R
+            # Evitar índices fuera de rango
+            if dia_actual >= matriz_R.shape[1]:  
                 break
 
-            restriccion = matriz_R[i, dia_actual]  # Factor de restricción
+            # Verificar restricción y evitar errores
+            restriccion = matriz_R[i, dia_actual] if not np.isnan(matriz_R[i, dia_actual]) else 1.0  # Si es NaN, asumir sin restricción
 
             # Si la restricción es total (0), no se produce y se avanza al siguiente día
             if restriccion == 0:
